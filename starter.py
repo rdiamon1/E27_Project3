@@ -5,6 +5,19 @@ import numpy
 import sys
 import os
 
+f = 600
+u0 = 320
+v0 = 240
+b = 0.05
+
+K = numpy.matrix('600 0 320; 0 600 240; 0 0 1')
+
+print K
+
+Kinv = numpy.linalg.inv(K)
+
+print Kinv
+
 # Get command line arguments or print usage and exit
 if len(sys.argv) > 2:
     proj_file = sys.argv[1]
@@ -13,6 +26,7 @@ else:
     progname = os.path.basename(sys.argv[0])
     print >> sys.stderr, 'usage: '+progname+' PROJIMAGE CAMIMAGE'
     sys.exit(1)
+
 
 # Load in our images as grayscale (1 channel) images
 proj_image = cv2.imread(proj_file, cv2.IMREAD_GRAYSCALE)
@@ -30,16 +44,25 @@ param_P1 = 0
 param_P2 = 20000
 
 # Create a stereo matcher object
-matcher = cv2.StereoSGBM_create(min_disparity, 
-                                max_disparity, 
-                                window_size, 
-                                param_P1, 
+matcher = cv2.StereoSGBM_create(min_disparity,
+                                max_disparity,
+                                window_size,
+                                param_P1,
                                 param_P2)
 
 # Compute a disparity image. The actual disparity image is in
 # fixed-point format and needs to be divided by 16 to convert to
 # actual disparities.
 disparity = matcher.compute(cam_image, proj_image) / 16.0
+
+n = disparity.shape[0] * disparity.shape[1]
+
+print disparity.shape
+print n
+
+qarr = numpy.zeros((n, 3))
+
+Z = (b * f) / disparity
 
 # Pop up the disparity image.
 cv2.imshow('Disparity', disparity/disparity.max())
