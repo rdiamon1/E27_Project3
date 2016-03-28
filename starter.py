@@ -60,9 +60,12 @@ n = disparity.shape[0] * disparity.shape[1]
 print disparity.shape
 print n
 
-qarr = numpy.zeros((n, 3))
+# qarr = numpy.zeros((n, 3))
 
 Z = (b * f) / disparity
+Zmax = 8
+
+qarr =
 
 # Pop up the disparity image.
 cv2.imshow('Disparity', disparity/disparity.max())
