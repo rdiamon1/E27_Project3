@@ -65,7 +65,9 @@ print n
 Z = (b * f) / disparity
 Zmax = 8
 
-qarr =
+# qarr =
+
+print cam_image.shape
 
 # Pop up the disparity image.
 cv2.imshow('Disparity', disparity/disparity.max())
