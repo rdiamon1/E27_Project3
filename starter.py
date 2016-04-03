@@ -11,12 +11,11 @@ v0 = 240
 b = 0.05
 
 K = numpy.matrix('600 0 320; 0 600 240; 0 0 1')
-
-print K
+print 'K = ', K
 
 Kinv = numpy.linalg.inv(K)
 
-print Kinv
+print 'Kinv = ', Kinv
 
 # Get command line arguments or print usage and exit
 if len(sys.argv) > 2:
@@ -32,8 +31,13 @@ else:
 proj_image = cv2.imread(proj_file, cv2.IMREAD_GRAYSCALE)
 cam_image = cv2.imread(cam_file, cv2.IMREAD_GRAYSCALE)
 
+cam_image[0,1] = 255 ## REMOVE THIS!!!
+
 # Make sure they are the same size.
 assert(proj_image.shape == cam_image.shape)
+width = cam_image.shape[1]
+height = cam_image.shape[0]
+print 'width = ',width,' height = ',height
 
 # Set up parameters for stereo matching (see OpenCV docs at
 # http://goo.gl/U5iW51 for details).
@@ -60,7 +64,49 @@ n = disparity.shape[0] * disparity.shape[1]
 print disparity.shape
 print n
 
-# qarr = numpy.zeros((n, 3))
+# vectorized version
+w = 15
+h = 10
+print cam_image[0:h,0:w]
+xcoords = range(width)
+ycoords = range(height)
+X,Y = numpy.meshgrid(xcoords, ycoords)
+print X[0:h,0:w]
+print Y[0:h,0:w]
+#mask = numpy.equal(cam_image[X,Y],255)
+#mask = numpy.logical_and(cam_image[X,Y]==255 and True)
+mask = numpy.equal(cam_image,255)
+print mask[0:h,0:w]
+print cam_image[mask].shape
+print cam_image[mask][:50]
+
+#xpts = numpy.logical_and(X,mask)
+xpts = X[mask]
+ypts = Y[mask]
+zpts = numpy.ones(xpts.shape)
+pts = numpy.vstack((xpts,ypts,zpts))
+print 'now xpts'
+print xpts.shape
+print ypts.shape
+print zpts.shape
+print pts.shape
+
+
+qvals = numpy.dot(Kinv, cam_image[mask])
+
+
+# iterative version
+qarr = numpy.zeros((n, 3))
+qindx = 0
+for row in range(height):
+    for col in range(width):
+        if cam_image[row][col] == 255:
+            qarr[qindx] = numpy.dot(Kinv, [row, col, 1])
+            qindx += 1
+print 'qindx = ', qindx
+qarr = qarr[:qindx-1]
+
+
 
 Z = (b * f) / disparity
 Zmax = 8
