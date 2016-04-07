@@ -61,40 +61,59 @@ disparity = matcher.compute(cam_image, proj_image) / 16.0
 
 n = disparity.shape[0] * disparity.shape[1]
 
-print disparity.shape
+"""
+dcount = 0
+print 'disparity shape = ',disparity.shape
+for i in range(disparity.shape[0]):
+    for j in range(disparity.shape[1]):
+        if disparity[i][j] == 0:
+            dcount += 1
 print n
+print dcount
+"""
 
 # vectorized version
 w = 15
 h = 10
+print '-------disparity-----------'
+print disparity[h:2*h,w:2*w]
+print '-------cam_image-----------'
 print cam_image[0:h,0:w]
-xcoords = range(width)
-ycoords = range(height)
-X,Y = numpy.meshgrid(xcoords, ycoords)
-print X[0:h,0:w]
-print Y[0:h,0:w]
+ucoords = range(width)
+vcoords = range(height)
+U,V = numpy.meshgrid(ucoords, vcoords)
+print U[0:h,0:w]
+print V[0:h,0:w]
 #mask = numpy.equal(cam_image[X,Y],255)
 #mask = numpy.logical_and(cam_image[X,Y]==255 and True)
-mask = numpy.equal(cam_image,255)
+#mask = numpy.equal(cam_image,255)
+mask = (disparity > 0) & (disparity < 30)
 print mask[0:h,0:w]
 print cam_image[mask].shape
 print cam_image[mask][:50]
 
 #xpts = numpy.logical_and(X,mask)
-xpts = X[mask]
-ypts = Y[mask]
-zpts = numpy.ones(xpts.shape)
-pts = numpy.vstack((xpts,ypts,zpts))
-print 'now xpts'
-print xpts.shape
-print ypts.shape
-print zpts.shape
+upts = U[mask]
+vpts = V[mask]
+onepts = numpy.ones(upts.shape)
+pts = numpy.vstack((upts,vpts,onepts))
+disp_pts = disparity[mask]
+
+print 'disp_pts range=', disp_pts.min(), disp_pts.max()
+
+print 'now upts'
+print upts.shape
+print vpts.shape
+print onepts.shape
 print pts.shape
+print 'disp_pts shape: ',disp_pts.shape
 
 
-qvals = numpy.dot(Kinv, cam_image[mask])
+Parr = numpy.dot(Kinv, pts)
+print 'Parr.shape = ',Parr.shape
+print Parr[2][:20]
 
-
+"""
 # iterative version
 qarr = numpy.zeros((n, 3))
 qindx = 0
@@ -106,15 +125,44 @@ for row in range(height):
 print 'qindx = ', qindx
 qarr = qarr[:qindx-1]
 
+"""
 
-
-Z = (b * f) / disparity
-Zmax = 8
-
-# qarr =
-
-print cam_image.shape
+Z = (b * f) / disp_pts
+print 'Z shape = ',Z.shape
+Zmax = 6
+print(max(Z))
+#threshold by setting values above Zmax to Zmax
+print Z.dtype
+"""
+Z= Z.astype(numpy.float32)
+xx,Z = cv2.threshold(Z,Zmax,0,cv2.THRESH_TRUNC)
+print(max(Z))
+"""
+print 'Z shape = ',Z.shape
 
 # Pop up the disparity image.
 cv2.imshow('Disparity', disparity/disparity.max())
 while cv2.waitKey(5) < 0: pass
+
+#scale Parr by Z to make the Z-values correct
+print Z[0:5]
+Zdiag = numpy.diag(Z)
+print 'Zdiag shape = ',Zdiag.shape
+"""
+for  i in range(5):
+    print Zdiag[i][i],
+    print Zdiag[i+1][i]
+"""
+
+print 'Z range:', Z.min(), Z.max()
+
+
+print Parr.shape
+print Z.shape
+
+#ParrScaled = numpy.dot(Parr, Zdiag)
+ParrScaled = numpy.array(Parr) * Z #element wise broadcasting with
+print ParrScaled.shape
+print ParrScaled[2][0]
+ParrScaled = numpy.transpose(ParrScaled)
+numpy.save('starterXYZ',ParrScaled)
