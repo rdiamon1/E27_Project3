@@ -1,9 +1,24 @@
-#!/usr/bin/env python
+"""
+starter_clean.py
+
+Stater code:   Matt Zucker
+Modifications: Julie Harris and Rachel Diamond
+Date:          April 2016
+
+This program takes in two .png images (one with projected points and the other
+with the new locations of those points after they are distorted by a 3D object)
+
+It creates a nx3 array of of XYZ data to be used as input to the PointCloudApp
+module, where n is the useable number of pixels from the disparity image.
+"""
 
 import cv2
 import numpy
 import sys
 import os
+
+# name of the file for the resulting array
+returnfilename = 'starterXYZ'
 
 # define variables for K matrix
 f = 600
@@ -12,7 +27,7 @@ v0 = 240
 b = 0.05
 
 # define K matrix
-K = numpy.matrix('600 0 320; 0 600 240; 0 0 1')
+K = numpy.array([[f, 0, u0], [0, f, v0], [0, 0, 1]])
 
 # define K inverse by taking the inverse of K
 Kinv = numpy.linalg.inv(K)
@@ -30,8 +45,6 @@ else:
 # Load in our images as grayscale (1 channel) images
 proj_image = cv2.imread(proj_file, cv2.IMREAD_GRAYSCALE)
 cam_image = cv2.imread(cam_file, cv2.IMREAD_GRAYSCALE)
-
-cam_image[0,1] = 255 ## REMOVE THIS!!!
 
 # Make sure they are the same size.
 assert(proj_image.shape == cam_image.shape)
@@ -63,32 +76,29 @@ ucoords = range(width)
 vcoords = range(height)
 U,V = numpy.meshgrid(ucoords, vcoords)
 
-# set maximum Z value as defined in project description.
-Zmax = 8
-# set a minimum disparity value using equation given
-# in project description.
+# set maximum Z value (distance from camera) as defined in project description.
+Zmax = 8 # this is 8 meters
+
+# set a minimum disparity value using equation given in project description.
 disp_low = (b*f)/Zmax
 
 # define a set of points where the disparity is greater
 # than the above defined minimum value.
 mask = (disparity > disp_low)
 
-# define the points in U and V that have the correct
-# disparity
+# define the points in U and V that have the correct disparity
 upts = U[mask]
 vpts = V[mask]
 onepts = numpy.ones(upts.shape)
 
-# stack the u points, v points, and 1 points to
-# create the q array
+# stack the u points, v points, and 1 points to create the q array
 pts = numpy.vstack((upts,vpts,onepts))
 
 # define disparity points by selecting the points in
 # disparity that are already selected by the mask
 disp_pts = disparity[mask]
 
-# define an array of points by multiplying K inverse
-# by array of q points
+# define an array of points by multiplying K inverse by array of q points
 Parr = numpy.dot(Kinv, pts)
 
 # define an array of Z points using the previously
@@ -99,7 +109,8 @@ Z = (b * f) / disp_pts
 cv2.imshow('Disparity', disparity/disparity.max())
 while cv2.waitKey(5) < 0: pass
 
-#ParrScaled = numpy.dot(Parr, Zdiag)
-ParrScaled = numpy.array(Parr) * Z #element wise broadcasting with
+ParrScaled = Parr * Z
 ParrScaled = numpy.transpose(ParrScaled)
-numpy.save('starterXYZ',ParrScaled)
+
+# Save the properly scaled array as starterXYZ.npy
+numpy.save(returnfilename,ParrScaled)
