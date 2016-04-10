@@ -43,7 +43,7 @@ print 'width = ',width,' height = ',height
 # http://goo.gl/U5iW51 for details).
 min_disparity = 0
 max_disparity = 16
-window_size = 11
+window_size = 15
 param_P1 = 0
 param_P2 = 20000
 
