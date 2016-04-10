@@ -1,3 +1,7 @@
+"""
+SEE starter_clean.py FOR UPDATED VERSION
+"""
+
 #!/usr/bin/env python
 
 import cv2
